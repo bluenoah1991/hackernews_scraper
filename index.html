@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Renderer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+</head>
+
+<body>
+    <section class="section">
+        <div class="container">
+            <h1 class="title">JSON Renderer</h1>
+            <div id="json-container">
+                <!-- JSON content will be rendered here -->
+            </div>
+        </div>
+    </section>
+
+    <script>
+        async function fetchAndRenderJSON() {
+            const container = document.getElementById('json-container');
+
+            try {
+                // Fetch the HTML content of the 'out' directory
+                const fileListResponse = await fetch('http://127.0.0.1:8000/out/');
+                const fileListHTML = await fileListResponse.text();
+
+                // Parse the HTML to extract <a> tags
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(fileListHTML, 'text/html');
+                const links = Array.from(doc.querySelectorAll('a'));
+
+                // Extract file names from the <a> tags
+                const fileList = links.map(link => link.getAttribute('href')).filter(fileName => fileName.endsWith('.json'));
+
+                // Iterate over each file and fetch its content
+                for (const fileName of fileList) {
+                    const response = await fetch(`http://127.0.0.1:8000/out/${fileName}`);
+                    const data = await response.json();
+
+                    // Create a section for each file
+                    const section = document.createElement('div');
+                    section.className = 'section';
+
+                    const sectionTitle = document.createElement('h2');
+                    sectionTitle.className = 'title is-3';
+                    sectionTitle.textContent = `File: ${fileName}`;
+                    section.appendChild(sectionTitle);
+
+                    // Render each item in the file
+                    data.forEach(item => {
+                        const box = document.createElement('div');
+                        box.className = 'box';
+
+                        const title = document.createElement('h2');
+                        title.className = 'title is-4';
+
+                        const englishTitle = document.createElement('span');
+                        englishTitle.textContent = item.title || 'No Title';
+
+                        const chineseTitle = document.createElement('div');
+                        chineseTitle.textContent = item.translated_title || '无标题';
+                        chineseTitle.style.marginTop = '5px';
+
+                        title.appendChild(englishTitle);
+                        title.appendChild(chineseTitle);
+
+                        const link = document.createElement('a');
+                        link.href = item.url || '#';
+                        link.textContent = item.url || 'No URL';
+                        link.className = 'is-link';
+
+                        const summary = document.createElement('p');
+                        summary.textContent = item.summary || 'No Summary';
+                        summary.style.fontStyle = 'italic';
+
+                        box.appendChild(title);
+                        box.appendChild(link);
+                        box.appendChild(summary);
+                        section.appendChild(box);
+                    });
+
+                    container.appendChild(section);
+                }
+            } catch (error) {
+                console.error('Error fetching or rendering JSON:', error);
+                container.innerHTML = '<p class="has-text-danger">Failed to load JSON data.</p>';
+            }
+        }
+
+        // Call the function to fetch and render JSON
+        fetchAndRenderJSON();
+    </script>
+</body>
+
+</html>

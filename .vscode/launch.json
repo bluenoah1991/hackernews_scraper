@@ -1,0 +1,21 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/hackernews_scraper.py",
+            "console": "integratedTerminal",
+            "env": {
+                "DEEPSEEK_API_KEY": "sk-624bb8be971047d4accb80517b9ca9da",
+                "DEEPSEEK_BASE_URL": "https://api.deepseek.com/v1",
+                "HTTP_PROXY": "http://127.0.0.1:1080",
+                "HTTPS_PROXY": "http://127.0.0.1:1080"
+            }
+        }
+    ]
+}
