@@ -5,6 +5,23 @@ import json
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+import argparse
+import time
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
+
+# Configure session with retry strategy
+session = requests.Session()
+retry_strategy = Retry(
+    total=3,  # Retry up to 3 times
+    backoff_factor=1,  # Wait 1 second between retries
+    # Retry on these HTTP status codes
+    status_forcelist=[429, 500, 502, 503, 504]
+)
+adapter = HTTPAdapter(max_retries=retry_strategy)
+session.mount('http://', adapter)
+session.mount('https://', adapter)
 
 
 def scrape_hackernews(pages=3):
@@ -22,7 +39,8 @@ def scrape_hackernews(pages=3):
 
     for page in range(1, pages + 1):
         url = f"{base_url}/news?p={page}" if page > 1 else base_url
-        response = requests.get(url, proxies=proxies)
+        response = session.get(url, proxies=proxies)
+        time.sleep(1)  # Wait 1 second between requests
         soup = BeautifulSoup(response.text, 'html.parser')
 
         # Find all title lines
@@ -155,13 +173,17 @@ def save_to_json(data, filename):
 
 
 def main():
-    # 1. Scrape Hacker News data
-    print("Scraping Hacker News data...")
-    hackernews_items = scrape_hackernews(pages=3)
-    print(f"Found {len(hackernews_items)} projects")
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description="Control script behavior.")
+    parser.add_argument("--browser-only", action="store_true",
+                        help="Scrape 50 pages and filter only for browser topics.")
+    args = parser.parse_args()
 
-    # 2. Define topics to filter
+    # Adjust parameters based on the argument
+    pages = 50 if args.browser_only else 3
     topics = {
+        "browsers": "Browsers, including browser engines, plugin development, performance optimization, and cross-browser compatibility"
+    } if args.browser_only else {
         "artificial_intelligence": "Artificial intelligence, including machine learning, deep learning, natural language processing, computer vision, reinforcement learning, and AI applications",
         "ecommerce": "E-commerce, including online shopping platforms, payment gateways, logistics solutions, e-commerce marketing tools, and multi-language/multi-currency support",
         "computer_science": "Computer science, including algorithms, data structures, programming languages, software engineering, artificial intelligence, computer systems, and theoretical computer science",
@@ -170,12 +192,17 @@ def main():
         "entrepreneurship": "Entrepreneurship, including startups, business models, venture capital, product development, and market strategies"
     }
 
-    # 3. Filter for all topics in a single call
+    # 1. Scrape Hacker News data
+    print("Scraping Hacker News data...")
+    hackernews_items = scrape_hackernews(pages=pages)
+    print(f"Found {len(hackernews_items)} projects")
+
+    # 2. Filter for all topics in a single call
     print("Filtering projects for all topics...")
     filtered_results = filter_by_topics(
         hackernews_items, topics)
 
-    # 4. Add summaries for each topic
+    # 3. Add summaries for each topic
     summarized_results = {}
     for topic_name, filtered_items in filtered_results.items():
         print(

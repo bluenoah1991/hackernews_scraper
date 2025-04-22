@@ -10,6 +10,9 @@
             "request": "launch",
             "program": "${workspaceFolder}/hackernews_scraper.py",
             "console": "integratedTerminal",
+            "args": [
+                "--browser-only"
+            ],
             "env": {
                 "DEEPSEEK_API_KEY": "sk-624bb8be971047d4accb80517b9ca9da",
                 "DEEPSEEK_BASE_URL": "https://api.deepseek.com/v1",
